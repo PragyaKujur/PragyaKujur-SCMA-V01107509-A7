@@ -1,151 +1,75 @@
 import streamlit as st
 import pandas as pd
-import math
-from pathlib import Path
+import matplotlib.pyplot as plt
 
-# Set the title and favicon that appear in the Browser's tab bar.
-st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
-)
+# Sample marketing data
+data = {
+    'Campaign': ['Campaign A', 'Campaign B', 'Campaign C', 'Campaign D'],
+    'Clicks': [1000, 1500, 2000, 2500],
+    'Impressions': [10000, 15000, 20000, 25000],
+    'CTR': [0.1, 0.1, 0.1, 0.1],
+    'Conversions': [100, 120, 150, 180],
+    'Cost': [500, 700, 800, 900],
+    'Revenue': [1500, 2100, 3000, 4000]
+}
 
-# -----------------------------------------------------------------------------
-# Declare some useful functions.
+# Create a DataFrame
+df = pd.DataFrame(data)
 
-@st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
+# Streamlit app
+st.title('Marketing Campaign Dashboard')
 
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
-    """
+st.sidebar.header('Filters')
 
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
+# Sidebar filters
+selected_campaigns = st.sidebar.multiselect('Select Campaigns', options=df['Campaign'], default=df['Campaign'])
 
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
+# Filter data
+filtered_data = df[df['Campaign'].isin(selected_campaigns)]
 
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
-    )
+# Display filtered data
+st.write('### Filtered Data', filtered_data)
 
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
+# Plotting Clicks vs Conversions
+st.write('### Clicks vs Conversions')
+fig, ax = plt.subplots()
+ax.bar(filtered_data['Campaign'], filtered_data['Clicks'], label='Clicks')
+ax.bar(filtered_data['Campaign'], filtered_data['Conversions'], bottom=filtered_data['Clicks'], label='Conversions')
+ax.set_xlabel('Campaign')
+ax.set_ylabel('Number')
+ax.legend()
 
-    return gdp_df
+st.pyplot(fig)
 
-gdp_df = get_gdp_data()
+# Plotting Click Through Rate (CTR)
+st.write('### Click Through Rate (CTR)')
+fig, ax = plt.subplots()
+ax.bar(filtered_data['Campaign'], filtered_data['CTR'], color='green')
+ax.set_xlabel('Campaign')
+ax.set_ylabel('CTR')
+st.pyplot(fig)
 
-# -----------------------------------------------------------------------------
-# Draw the actual page
+# Plotting Cost vs Revenue
+st.write('### Cost vs Revenue')
+fig, ax = plt.subplots()
+ax.bar(filtered_data['Campaign'], filtered_data['Cost'], label='Cost')
+ax.bar(filtered_data['Campaign'], filtered_data['Revenue'], bottom=filtered_data['Cost'], label='Revenue')
+ax.set_xlabel('Campaign')
+ax.set_ylabel('Amount')
+ax.legend()
 
-# Set the title that appears at the top of the page.
-'''
-# :earth_americas: GDP dashboard
+st.pyplot(fig)
 
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
+# Show data statistics
+st.write('### Data Statistics')
+st.write(filtered_data.describe())
 
-# Add some spacing
-''
-''
+# ROI Calculation
+st.write('### Return on Investment (ROI)')
+filtered_data['ROI'] = (filtered_data['Revenue'] - filtered_data['Cost']) / filtered_data['Cost'] * 100
+st.write(filtered_data[['Campaign', 'ROI']])
 
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
-
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
-
-countries = gdp_df['Country Code'].unique()
-
-if not len(countries):
-    st.warning("Select at least one country")
-
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
-''
-''
-''
-
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
-)
-
-''
-''
-
-
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
-
-st.header(f'GDP in {to_year}', divider='gray')
-
-''
-
-cols = st.columns(4)
-
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
-
-    with col:
-        first_gdp = first_year[gdp_df['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[gdp_df['Country Code'] == country]['GDP'].iat[0] / 1000000000
-
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
-        else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
-
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
-        )
+st.write('### Additional Analysis')
+st.write("""
+This dashboard provides an overview of marketing campaign performance. You can use the filters to select specific campaigns and analyze their performance in terms of clicks, impressions, conversions, cost, and revenue. The Click Through Rate (CTR) chart helps visualize the effectiveness of each campaign, and the ROI calculation provides insight into the profitability of each campaign.
+""")
