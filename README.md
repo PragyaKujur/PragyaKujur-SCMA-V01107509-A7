@@ -1,8 +1,7 @@
 # Marketing Campaign Dashboard
- A Streamlit app to visualize and analyze the performance of marketing campaigns. This dashboard allows users to filter campaigns, view detailed statistics, and visualize key metrics such as clicks, conversions, click-through rate (CTR), cost, revenue, and return on investment (ROI).
+ A Streamlit app to visualize and analyze the performance of marketing campaigns. This dashboard provides an overview of marketing campaign performance. You can use the filters to select specific campaigns and analyze their performance in terms of clicks, impressions, conversions, cost, and revenue. The Click Through Rate (CTR) chart helps visualize the effectiveness of each campaign, and the ROI calculation provides insight into the profitability of each campaign.
 
 
-A Streamlit app to visualize and analyze the performance of marketing campaigns. This dashboard allows users to filter campaigns, view detailed statistics, and visualize key metrics such as clicks, conversions, click-through rate (CTR), cost, revenue, and return on investment (ROI).
 
 ## Installation
 
