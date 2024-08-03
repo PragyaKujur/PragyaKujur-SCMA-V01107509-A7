@@ -55,7 +55,15 @@ if st.sidebar.button('Add Campaign'):
         'Duration': duration,
         'ROI': (revenue - cost) / cost * 100 if cost > 0 else 0
     }
-    df = df.append(new_data, ignore_index=True)
+    # Convert new campaign data to DataFrame
+    new_data = pd.DataFrame([new_data])
+    
+    # Ensure new_data has the same columns and types as df
+    new_data = new_data.astype(df.dtypes)
+    new_data = new_data[df.columns]
+    
+    # Append new data using pd.concat
+    df = pd.concat([df, new_data], ignore_index=True)
     st.sidebar.success('Campaign added successfully')
 
 st.sidebar.header('Filters')
